@@ -1,0 +1,19 @@
+{{- if .Values.elasticsearch.enabled }}
+# Elasticsearch is expected to be deployed via Bitnami Elasticsearch subchart
+# This file documents the expected configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-elasticsearch-config
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: search
+data:
+  elasticsearch.yml: |
+    cluster.name: {{ .Values.elasticsearch.clusterName }}
+    network.host: 0.0.0.0
+    discovery.type: single-node
+    xpack.security.enabled: true
+    xpack.security.transport.ssl.enabled: true
+    xpack.security.http.ssl.enabled: true
+{{- end }}

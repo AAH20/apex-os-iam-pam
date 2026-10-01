@@ -1,0 +1,22 @@
+apiVersion: v2
+name: apex-os-iam-pam
+description: APEX-OS IAM/PAM - Identity and Access Management with Privileged Access Management
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - iam
+  - pam
+  - identity
+  - access-management
+  - security
+  - authentication
+  - authorization
+home: https://apex-os.io
+sources:
+  - https://github.com/apex-os/iam-pam
+maintainers:
+  - name: APEX-OS Team
+    email: team@apex-os.io
+annotations:
+  category: Security

@@ -1,0 +1,31 @@
+{{- if .Values.postgresql.enabled }}
+# PostgreSQL is expected to be deployed via Bitnami PostgreSQL subchart
+# This file documents the expected configuration
+# In production, add as dependency in Chart.yaml or deploy separately
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-postgresql-init
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS apex_os_iam;
+    CREATE DATABASE IF NOT EXISTS apex_os_audit;
+    CREATE DATABASE IF NOT EXISTS apex_os_vault;
+    CREATE DATABASE IF NOT EXISTS apex_os_pam;
+
+    \c apex_os_iam;
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+    \c apex_os_audit;
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    \c apex_os_vault;
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    \c apex_os_pam;
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+{{- end }}

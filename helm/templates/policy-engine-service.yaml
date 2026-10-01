@@ -1,0 +1,19 @@
+{{- if .Values.policyEngine.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-policy-engine
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: policy-engine
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.policyEngine.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-policy-engine
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

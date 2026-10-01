@@ -1,0 +1,69 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-alerts
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  groups:
+    - name: apex-os-iam-pam-alerts
+      rules:
+        - alert: APEXOSHighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "APEX-OS IAM/PAM high error rate"
+            description: "Error rate is above 5% for more than 5 minutes"
+        - alert: APEXOSHighLatency
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "APEX-OS IAM/PAM high latency"
+            description: "95th percentile latency is above 2 seconds"
+        - alert: APEXOSPodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "APEX-OS IAM/PAM pod crash looping"
+            description: "Pod {{ $labels.pod }} is crash looping"
+        - alert: APEXOSHighCPUUsage
+          expr: rate(container_cpu_usage_seconds_total{namespace="{{ .Release.Namespace }}"}[5m]) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "APEX-OS IAM/PAM high CPU usage"
+            description: "CPU usage is above 80% for more than 10 minutes"
+        - alert: APEXOSHighMemoryUsage
+          expr: container_memory_usage_bytes{namespace="{{ .Release.Namespace }}"} / container_spec_memory_limit_bytes{namespace="{{ .Release.Namespace }}"} > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "APEX-OS IAM/PAM high memory usage"
+            description: "Memory usage is above 85% for more than 10 minutes"
+        - alert: APEXOSFailedLoginAttempts
+          expr: rate(apex_auth_login_failures_total[5m]) > 10
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "APEX-OS IAM/PAM failed login attempts"
+            description: "More than 10 failed login attempts per second"
+        - alert: APEXOSPAMSessionAnomaly
+          expr: rate(apex_pam_session_anomalies_total[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "APEX-OS PAM session anomaly detected"
+            description: "PAM session anomaly detected - possible security incident"
+{{- end }}

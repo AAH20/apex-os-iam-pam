@@ -1,0 +1,99 @@
+{{- $fullName := include "apex-os-iam-pam.fullname" . -}}
+{{- $namespace := .Release.Namespace -}}
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    APEX-OS IAM/PAM Helm Chart                               ║
+║                     Successfully Installed!                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Release Name:    {{ .Release.Name }}
+Namespace:       {{ .Release.Namespace }}
+Chart Version:   {{ .Chart.Version }}
+App Version:     {{ .Chart.AppVersion }}
+
+───────────────────────────────────────────────────────────────────────────────
+COMPONENTS DEPLOYED
+───────────────────────────────────────────────────────────────────────────────
+
+{{- if .Values.apiGateway.enabled }}
+  ✓ API Gateway          ({{ .Values.replicaCount.apiGateway }} replicas)
+{{- end }}
+{{- if .Values.authService.enabled }}
+  ✓ Auth Service         ({{ .Values.replicaCount.authService }} replicas)
+{{- end }}
+{{- if .Values.authorizationService.enabled }}
+  ✓ Authorization Service ({{ .Values.replicaCount.authorizationService }} replicas)
+{{- end }}
+{{- if .Values.sessionService.enabled }}
+  ✓ Session Service      ({{ .Values.replicaCount.sessionService }} replicas)
+{{- end }}
+{{- if .Values.pamService.enabled }}
+  ✓ PAM Service          ({{ .Values.replicaCount.pamService }} replicas)
+{{- end }}
+{{- if .Values.vaultService.enabled }}
+  ✓ Vault Service        ({{ .Values.replicaCount.vaultService }} replicas)
+{{- end }}
+{{- if .Values.auditService.enabled }}
+  ✓ Audit Service        ({{ .Values.replicaCount.auditService }} replicas)
+{{- end }}
+{{- if .Values.userDirectory.enabled }}
+  ✓ User Directory       ({{ .Values.replicaCount.userDirectory }} replicas)
+{{- end }}
+{{- if .Values.policyEngine.enabled }}
+  ✓ Policy Engine        ({{ .Values.replicaCount.policyEngine }} replicas)
+{{- end }}
+{{- if .Values.webUI.enabled }}
+  ✓ Web UI               ({{ .Values.replicaCount.webUI }} replicas)
+{{- end }}
+{{- if .Values.monitoring.enabled }}
+  ✓ Monitoring Stack     (Prometheus + Grafana + Jaeger)
+{{- end }}
+
+───────────────────────────────────────────────────────────────────────────────
+ACCESS INFORMATION
+───────────────────────────────────────────────────────────────────────────────
+
+{{- if .Values.ingress.enabled }}
+  Ingress Host:    {{ (index .Values.ingress.hosts 0).host }}
+  Ingress URL:     https://{{ (index .Values.ingress.hosts 0).host }}
+{{- end }}
+
+  Web UI:          kubectl port-forward svc/{{ $fullName }}-web-ui 3000:3000 -n {{ $namespace }}
+  API Gateway:     kubectl port-forward svc/{{ $fullName }}-api-gateway 8080:8080 -n {{ $namespace }}
+  Grafana:         kubectl port-forward svc/{{ $fullName }}-grafana 3001:3000 -n {{ $namespace }}
+  Prometheus:      kubectl port-forward svc/{{ $fullName }}-prometheus 9090:9090 -n {{ $namespace }}
+  Jaeger:          kubectl port-forward svc/{{ $fullName }}-jaeger 16686:16686 -n {{ $namespace }}
+
+───────────────────────────────────────────────────────────────────────────────
+USEFUL COMMANDS
+───────────────────────────────────────────────────────────────────────────────
+
+  # Check all pods
+  kubectl get pods -n {{ $namespace }} -l app.kubernetes.io/part-of=apex-os-iam-pam
+
+  # Check all services
+  kubectl get svc -n {{ $namespace }} -l app.kubernetes.io/part-of=apex-os-iam-pam
+
+  # View logs
+  kubectl logs -f deployment/{{ $fullName }}-api-gateway -n {{ $namespace }}
+
+  # Check HPA
+  kubectl get hpa -n {{ $namespace }}
+
+  # Upgrade release
+  helm upgrade {{ .Release.Name }} ./helm -n {{ $namespace }} -f values.yaml
+
+  # Uninstall
+  helm uninstall {{ .Release.Name }} -n {{ $namespace }}
+
+───────────────────────────────────────────────────────────────────────────────
+SECURITY NOTES
+───────────────────────────────────────────────────────────────────────────────
+
+  • Network policies are {{ if .Values.security.networkPolicies.enabled }}enabled{{ else }}disabled{{ end }}
+  • Pod security context: runAsNonRoot={{ .Values.security.podSecurityContext.runAsNonRoot }}
+  • RBAC: {{ if .Values.security.rbac.create }}enabled{{ else }}disabled{{ end }}
+  • Secrets are auto-generated on first install
+  • Default Grafana admin password: {{ .Values.monitoring.grafana.adminPassword }}
+
+───────────────────────────────────────────────────────────────────────────────

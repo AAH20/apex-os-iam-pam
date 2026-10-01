@@ -1,0 +1,49 @@
+{{- if .Values.policyEngine.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-policies
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: policies
+data:
+  admin-full-access.rego: |
+    package apex.authz
+
+    default allow = false
+
+    allow {
+      input.user.roles[_] == "admin"
+      input.resource != ""
+      input.action != ""
+    }
+  user-read-own.rego: |
+    package apex.authz
+
+    default allow = false
+
+    allow {
+      input.user.id == input.resource.owner
+      input.action == "read"
+    }
+  pam-elevated-access.rego: |
+    package apex.authz
+
+    default allow = false
+
+    allow {
+      input.user.mfa_verified == true
+      input.resource.type == "pam_session"
+      input.action == "create"
+      time.now_ns() >= input.user.session_start
+      time.now_ns() <= input.user.session_start + 3600000000000
+    }
+  deny-by-default.rego: |
+    package apex.authz
+
+    default decision = "deny"
+
+    decision = "allow" {
+      allow
+    }
+{{- end }}

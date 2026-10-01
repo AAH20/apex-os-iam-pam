@@ -1,0 +1,415 @@
+# Default values for apex-os-iam-pam
+
+global:
+  environment: production
+  domain: apex-os.io
+  imageRegistry: registry.apex-os.io
+  imagePullSecrets: []
+  storageClass: standard
+  labels:
+    app.kubernetes.io/part-of: apex-os-iam-pam
+    app.kubernetes.io/managed-by: Helm
+
+# ─── Replica Counts ───────────────────────────────────────────────────────────
+replicaCount:
+  apiGateway: 2
+  authService: 3
+  authorizationService: 2
+  sessionService: 2
+  pamService: 2
+  vaultService: 2
+  auditService: 2
+  userDirectory: 2
+  policyEngine: 2
+  webUI: 2
+
+# ─── Image Configuration ──────────────────────────────────────────────────────
+image:
+  registry: registry.apex-os.io
+  repository:
+    apiGateway: apex-os/api-gateway
+    authService: apex-os/auth-service
+    authorizationService: apex-os/authorization-service
+    sessionService: apex-os/session-service
+    pamService: apex-os/pam-service
+    vaultService: apex-os/vault-service
+    auditService: apex-os/audit-service
+    userDirectory: apex-os/user-directory
+    policyEngine: apex-os/policy-engine
+    webUI: apex-os/web-ui
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+# ─── Service Configuration ────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+# ─── Ingress Configuration ────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: iam.apex-os.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: apex-os-tls
+      hosts:
+        - iam.apex-os.io
+
+# ─── API Gateway ──────────────────────────────────────────────────────────────
+apiGateway:
+  enabled: true
+  port: 8080
+  logLevel: info
+  cors:
+    enabled: true
+    allowOrigins: "*"
+    allowMethods: "GET,POST,PUT,DELETE,OPTIONS"
+    allowHeaders: "Authorization,Content-Type,X-Request-ID"
+  rateLimit:
+    enabled: true
+    requestsPerMinute: 1000
+  routes:
+    - path: /api/v1/auth
+      service: authService
+    - path: /api/v1/authorize
+      service: authorizationService
+    - path: /api/v1/sessions
+      service: sessionService
+    - path: /api/v1/pam
+      service: pamService
+    - path: /api/v1/vault
+      service: vaultService
+    - path: /api/v1/audit
+      service: auditService
+    - path: /api/v1/users
+      service: userDirectory
+    - path: /api/v1/policies
+      service: policyEngine
+
+# ─── Auth Service ─────────────────────────────────────────────────────────────
+authService:
+  enabled: true
+  port: 8080
+  logLevel: info
+  jwt:
+    accessTokenTTL: 900
+    refreshTokenTTL: 604800
+    issuer: "https://iam.apex-os.io"
+  mfa:
+    enabled: true
+    totpIssuer: "APEX-OS"
+    smsProvider: twilio
+  oauth2:
+    enabled: true
+    providers:
+      - google
+      - github
+      - azure-ad
+  ldap:
+    enabled: true
+    host: openldap
+    port: 389
+    baseDN: "dc=apex-os,dc=io"
+    bindDN: "cn=admin,dc=apex-os,dc=io"
+  saml:
+    enabled: true
+    idpMetadataUrl: ""
+  session:
+    cookieSecure: true
+    cookieHttpOnly: true
+    cookieSameSite: Strict
+
+# ─── Authorization Service ────────────────────────────────────────────────────
+authorizationService:
+  enabled: true
+  port: 8080
+  logLevel: info
+  model: RBAC
+  policies:
+    - name: admin-full-access
+      effect: allow
+      resources: ["*"]
+      actions: ["*"]
+    - name: user-read-own
+      effect: allow
+      resources: ["users:self"]
+      actions: ["read"]
+    - name: pam-elevated-access
+      effect: allow
+      resources: ["pam:sessions"]
+      actions: ["create", "read", "approve"]
+      conditions:
+        mfa_required: true
+        time_restricted: true
+
+# ─── Session Service ──────────────────────────────────────────────────────────
+sessionService:
+  enabled: true
+  port: 8080
+  logLevel: info
+  sessionTimeout: 3600
+  maxConcurrentSessions: 5
+  idleTimeout: 900
+  recording:
+    enabled: true
+    storagePath: /var/recordings
+    retentionDays: 90
+
+# ─── PAM Service ──────────────────────────────────────────────────────────────
+pamService:
+  enabled: true
+  port: 8080
+  logLevel: info
+  sessionRecording: true
+  credentialInjection: true
+  justInTimeAccess: true
+  approvalWorkflow: true
+  maxSessionDuration: 3600
+  checkOutDuration: 7200
+  autoRotateCredentials: true
+  rotationInterval: 86400
+
+# ─── Vault Service ────────────────────────────────────────────────────────────
+vaultService:
+  enabled: true
+  port: 8080
+  logLevel: info
+  sealType: awskms
+  autoUnseal: true
+  storageBackend: raft
+  secretEngines:
+    - kv-v2
+    - database
+    - pki
+    - transit
+  dynamicCredentials:
+    enabled: true
+    providers:
+      - aws
+      - azure
+      - gcp
+      - database
+
+# ─── Audit Service ────────────────────────────────────────────────────────────
+auditService:
+  enabled: true
+  port: 8080
+  logLevel: info
+  logFormat: json
+  logDestination: elasticsearch
+  retentionDays: 365
+  immutableLogs: true
+  siemIntegration:
+    enabled: false
+    splunk:
+      enabled: false
+      hecUrl: ""
+      hecToken: ""
+    elastic:
+      enabled: true
+      hosts:
+        - http://elasticsearch:9200
+
+# ─── User Directory ───────────────────────────────────────────────────────────
+userDirectory:
+  enabled: true
+  port: 8080
+  logLevel: info
+  ldapSync:
+    enabled: true
+    interval: 300
+  scim:
+    enabled: true
+    version: "2.0"
+  userAttributes:
+    - username
+    - email
+    - firstName
+    - lastName
+    - groups
+    - roles
+    - mfaEnabled
+    - lastLogin
+
+# ─── Policy Engine ────────────────────────────────────────────────────────────
+policyEngine:
+  enabled: true
+  port: 8080
+  logLevel: info
+  policyLanguage: rego
+  policyStore: opa
+  defaultDecision: deny
+  evaluationMode: strict
+
+# ─── Web UI ───────────────────────────────────────────────────────────────────
+webUI:
+  enabled: true
+  port: 3000
+  logLevel: info
+  theme: dark
+  branding:
+    logoUrl: /assets/logo.svg
+    primaryColor: "#1a73e8"
+    companyName: "APEX-OS"
+  features:
+    dashboard: true
+    userManagement: true
+    policyEditor: true
+    sessionMonitor: true
+    auditViewer: true
+    reports: true
+
+# ─── PostgreSQL ───────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: apex-os-postgres-secret
+    database: apex_os_iam
+    username: apex_os
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: standard
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+
+# ─── Redis ────────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  auth:
+    existingSecret: apex-os-redis-secret
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: standard
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+  replica:
+    replicaCount: 2
+
+# ─── OpenLDAP ─────────────────────────────────────────────────────────────────
+openldap:
+  enabled: true
+  adminPassword: changeme
+  configPassword: changeme
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# ─── Elasticsearch ────────────────────────────────────────────────────────────
+elasticsearch:
+  enabled: true
+  clusterName: apex-os-audit
+  master:
+    replicaCount: 3
+    persistence:
+      enabled: true
+      size: 20Gi
+  data:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 100Gi
+
+# ─── Monitoring ───────────────────────────────────────────────────────────────
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    retention: 30d
+    storage: 50Gi
+  grafana:
+    enabled: true
+    adminPassword: admin
+    persistence:
+      enabled: true
+      size: 5Gi
+  jaeger:
+    enabled: true
+    storage: elasticsearch
+
+# ─── Security ─────────────────────────────────────────────────────────────────
+security:
+  networkPolicies:
+    enabled: true
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  serviceAccount:
+    create: true
+    annotations: {}
+  rbac:
+    create: true
+
+# ─── Autoscaling ──────────────────────────────────────────────────────────────
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# ─── Pod Disruption Budget ────────────────────────────────────────────────────
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# ─── Resource Defaults ────────────────────────────────────────────────────────
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# ─── Node Selector / Tolerations / Affinity ───────────────────────────────────
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ─── Feature Flags ────────────────────────────────────────────────────────────
+features:
+  zeroTrust: true
+  passwordless: true
+  biometricAuth: false
+  riskBasedAuth: true
+  sessionAnomalyDetection: true
+  credentialTheftDetection: true

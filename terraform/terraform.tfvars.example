@@ -1,0 +1,439 @@
+# APEX-OS IAM/PAM — Example terraform.tfvars
+# Copy this file to terraform.tfvars and fill in your values
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Global Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+environment = "production"
+aws_region  = "us-east-1"
+
+azure_tenant_id       = "00000000-0000-0000-0000-000000000000"
+azure_subscription_id = "00000000-0000-0000-0000-000000000000"
+
+gcp_project_id = "apex-os-prod"
+gcp_region      = "us-central1"
+
+k8s_host                   = "https://kubernetes.default.svc"
+k8s_cluster_ca_certificate = ""
+k8s_token                  = ""
+
+common_tags = {
+  Project   = "APEX-OS"
+  Component = "IAM-PAM"
+  ManagedBy = "Terraform"
+  Owner     = "security-team@apex-os.com"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AWS IAM Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+aws_users = {
+  "admin.user" = {
+    path                 = "/admin/"
+    force_destroy        = false
+    groups               = ["admins", "security"]
+    create_login_profile = true
+    create_access_key    = false
+    tags = {
+      Role = "admin"
+    }
+  }
+  "deploy.bot" = {
+    path                 = "/service/"
+    force_destroy        = false
+    groups               = ["deployers"]
+    create_login_profile = false
+    create_access_key    = true
+    tags = {
+      Role = "ci-cd"
+    }
+  }
+}
+
+aws_groups = {
+  "admins" = {
+    path        = "/admin/"
+    policy_arns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
+  }
+  "security" = {
+    path        = "/security/"
+    policy_arns = ["arn:aws:iam::aws:policy/SecurityAudit"]
+  }
+  "deployers" = {
+    path        = "/service/"
+    policy_arns = ["arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"]
+  }
+}
+
+aws_roles = {
+  "apex-os-admin-role" = {
+    path                  = "/admin/"
+    assume_role_policy    = jsonencode({ Version = "2012-10-17", Statement = [] })
+    max_session_duration  = 3600
+    permissions_boundary  = ""
+    policy_arns           = ["arn:aws:iam::aws:policy/AdministratorAccess"]
+    inline_policy         = null
+    tags = {
+      Role = "admin"
+    }
+  }
+}
+
+aws_policies = {
+  "apex-os-restrict-region" = {
+    path        = "/"
+    description = "Restrict operations to approved regions"
+    policy      = jsonencode({ Version = "2012-10-17", Statement = [] })
+    tags = {
+      Category = "compliance"
+    }
+  }
+}
+
+aws_policy_arns = [
+  "arn:aws:iam::aws:policy/ReadOnlyAccess",
+]
+
+aws_group_names = ["admins", "security", "deployers"]
+
+aws_enforce_mfa               = true
+aws_password_length           = 16
+aws_pgp_key                   = ""
+aws_configure_password_policy = true
+
+aws_service_control_policies = {
+  "deny-unapproved-regions" = {
+    description = "Deny operations outside approved regions"
+    content     = jsonencode({ Version = "2012-10-17", Statement = [] })
+    tags = {
+      Category = "compliance"
+    }
+  }
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Azure IAM Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+azure_users = {
+  "admin.user" = {
+    user_principal_name   = "admin.user@apex-os.com"
+    display_name          = "Admin User"
+    password              = "ChangeMe123!"
+    force_password_change = true
+    account_enabled       = true
+    mail_nickname         = "admin.user"
+    job_title             = "Security Administrator"
+    department            = "Security"
+    usage_location        = "US"
+  }
+}
+
+azure_groups = {
+  "security-admins" = {
+    security_enabled = true
+    mail_enabled     = false
+    mail_nickname    = "security-admins"
+    owners           = []
+    members          = ["admin.user@apex-os.com"]
+  }
+}
+
+azure_user_principal_names = ["admin.user@apex-os.com"]
+
+azure_custom_roles = {
+  "apex-os-reader" = {
+    scope             = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    description        = "Custom read-only role for APEX-OS"
+    actions            = ["Microsoft.Resources/subscriptions/resourceGroups/read"]
+    not_actions        = []
+    data_actions       = []
+    not_data_actions   = []
+    assignable_scopes  = ["/subscriptions/00000000-0000-0000-0000-000000000000"]
+  }
+}
+
+azure_role_assignments = {
+  "admin-user-assignment" = {
+    name                = "admin-user-role-assignment"
+    scope               = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    role_definition_id  = "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000000"
+    principal_id        = "00000000-0000-0000-0000-000000000000"
+    description         = "Assign admin role to admin user"
+    skip_service_principal_aadcheck = false
+  }
+}
+
+azure_conditional_access_policies = {
+  "require-mfa-for-admins" = {
+    state                    = "enabled"
+    included_applications    = ["All"]
+    excluded_applications    = []
+    included_users           = []
+    excluded_users           = []
+    included_groups          = ["security-admins"]
+    excluded_groups          = []
+    included_platforms       = []
+    excluded_platforms       = []
+    included_locations       = []
+    excluded_locations       = []
+    sign_in_risk_levels      = []
+    user_risk_levels         = []
+    grant_operator           = "OR"
+    built_in_controls        = ["mfa"]
+    custom_authentication_factors = []
+    terms_of_use             = []
+    sign_in_frequency        = null
+    sign_in_frequency_period = null
+    persistent_browser_mode  = null
+    cloud_app_security_policy = null
+  }
+}
+
+azure_pim_active_assignments = {}
+azure_pim_eligible_assignments = {}
+azure_key_vault_access_policies = {}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GCP IAM Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+gcp_service_accounts = {
+  "apex-os-deploy" = {
+    display_name = "APEX-OS Deploy"
+    description  = "Service account for CI/CD deployments"
+    project      = "apex-os-prod"
+    create_key   = false
+  }
+}
+
+gcp_custom_roles = {
+  "apexOsViewer" = {
+    title       = "APEX-OS Viewer"
+    description = "Custom read-only role for APEX-OS"
+    permissions = ["compute.instances.list", "compute.instances.get", "storage.buckets.list"]
+    stage       = "GA"
+    project     = "apex-os-prod"
+  }
+}
+
+gcp_project_bindings = {
+  "deploy-viewer" = {
+    project              = "apex-os-prod"
+    role                 = "projects/apex-os-prod/roles/apexOsViewer"
+    member               = "serviceAccount:apex-os-deploy@apex-os-prod.iam.gserviceaccount.com"
+    condition_title      = null
+    condition_description = null
+    condition_expression = null
+  }
+}
+
+gcp_project_role_bindings = {}
+gcp_org_bindings = {}
+gcp_org_role_bindings = {}
+gcp_folder_bindings = {}
+gcp_service_account_bindings = {}
+gcp_audit_configs = {}
+gcp_essential_contacts = {}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Kubernetes RBAC Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+k8s_namespaces = {
+  "apex-os" = {
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "restricted"
+      "pod-security.kubernetes.io/audit"   = "restricted"
+    }
+    annotations = {}
+  }
+}
+
+k8s_roles = {
+  "apex-os-deployer" = {
+    namespace = "apex-os"
+    labels    = {}
+    rules = [
+      {
+        api_groups     = ["apps", ""]
+        resources      = ["deployments", "pods", "services"]
+        resource_names = []
+        verbs          = ["get", "list", "watch", "create", "update", "patch"]
+      }
+    ]
+  }
+}
+
+k8s_cluster_roles = {
+  "apex-os-cluster-viewer" = {
+    labels = {}
+    rules = [
+      {
+        api_groups     = [""]
+        resources      = ["nodes", "namespaces"]
+        resource_names = []
+        verbs          = ["get", "list", "watch"]
+      }
+    ]
+    aggregation_rule = null
+  }
+}
+
+k8s_role_bindings = {
+  "deployer-binding" = {
+    namespace     = "apex-os"
+    labels        = {}
+    role_ref_kind = "Role"
+    role_ref_name = "apex-os-deployer"
+    subjects = [
+      {
+        kind      = "ServiceAccount"
+        name      = "apex-os-deploy"
+        namespace = "apex-os"
+        api_group = ""
+      }
+    ]
+  }
+}
+
+k8s_cluster_role_bindings = {}
+
+k8s_service_accounts = {
+  "apex-os-deploy" = {
+    namespace                        = "apex-os"
+    labels                           = {}
+    annotations                      = {}
+    automount_service_account_token = true
+  }
+}
+
+k8s_pod_security_policies = {}
+k8s_network_policies = {}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Monitoring Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+monitoring_aws_log_groups = {
+  "iam-audit" = {
+    name              = "/apex-os/iam-audit"
+    retention_in_days = 365
+    kms_key_id        = null
+    tags = {
+      Category = "security"
+    }
+  }
+}
+
+monitoring_aws_metric_alarms = {
+  "root-user-login" = {
+    alarm_name                = "apex-os-root-user-login"
+    comparison_operator       = "GreaterThanOrEqualToThreshold"
+    evaluation_periods        = 1
+    metric_name               = "RootUserLogin"
+    namespace                 = "APEX-OS/Security"
+    period                    = 300
+    statistic                 = "Sum"
+    threshold                 = 1
+    alarm_description         = "Alert on root user login"
+    alarm_actions             = []
+    ok_actions                = []
+    insufficient_data_actions = []
+    dimensions                = {}
+    tags = {
+      Severity = "critical"
+    }
+  }
+}
+
+monitoring_aws_dashboards = {}
+monitoring_aws_event_rules = {}
+monitoring_aws_event_target_arns = []
+monitoring_enable_aws_security_hub = true
+monitoring_security_hub_standards = [
+  "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+  "arn:aws:securityhub:::ruleset/pci-dss/v/3.2.1"
+]
+monitoring_enable_aws_guardduty = true
+
+monitoring_azure_log_workspaces = {}
+monitoring_azure_action_groups = {}
+monitoring_azure_metric_alerts = {}
+monitoring_azure_activity_alerts = {}
+
+monitoring_gcp_alert_policies = {}
+monitoring_gcp_notification_channels = {}
+monitoring_gcp_dashboards = {}
+monitoring_gcp_monitoring_groups = {}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Security Groups Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+sg_aws_security_groups = {
+  "apex-os-web" = {
+    name        = "apex-os-web-sg"
+    description = "Security group for APEX-OS web tier"
+    vpc_id      = "vpc-00000000000000000"
+    ingress_rules = [
+      {
+        description = "HTTPS from anywhere"
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      },
+      {
+        description = "HTTP from anywhere"
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    ]
+    egress_rules = [
+      {
+        description = "Allow all outbound"
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    ]
+    tags = {
+      Tier = "web"
+    }
+  }
+}
+
+sg_aws_standalone_rules = {}
+
+sg_azure_nsgs = {}
+sg_azure_subnet_nsg_associations = {}
+sg_azure_nic_nsg_associations = {}
+
+sg_gcp_firewall_rules = {
+  "allow-https" = {
+    name                     = "allow-https"
+    network                  = "default"
+    description              = "Allow HTTPS ingress"
+    project                  = "apex-os-prod"
+    priority                 = 1000
+    direction                = "INGRESS"
+    source_ranges            = ["0.0.0.0/0"]
+    source_tags              = []
+    source_service_accounts  = []
+    destination_ranges       = []
+    target_tags              = ["https-server"]
+    target_service_accounts  = []
+    allow_rules = [
+      {
+        protocol = "tcp"
+        ports    = ["443"]
+      }
+    ]
+    deny_rules             = []
+    disabled               = false
+    log_config_metadata    = "INCLUDE_ALL_METADATA"
+  }
+}
+
+sg_gcp_firewall_policies = {}
+sg_gcp_firewall_policy_rules = {}
+sg_gcp_firewall_policy_associations = {}

@@ -1,0 +1,30 @@
+{{- if .Values.monitoring.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-grafana-datasources
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://{{ include "apex-os-iam-pam.fullname" . }}-prometheus:9090
+        isDefault: true
+        editable: false
+      - name: Jaeger
+        type: jaeger
+        access: proxy
+        url: http://{{ include "apex-os-iam-pam.fullname" . }}-jaeger:16686
+        editable: false
+      - name: Elasticsearch
+        type: elasticsearch
+        access: proxy
+        url: http://{{ include "apex-os-iam-pam.fullname" . }}-elasticsearch:9200
+        database: "apex-os-audit-*"
+        editable: false
+{{- end }}

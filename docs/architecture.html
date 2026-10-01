@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX-OS IAM/PAM — Architecture Diagrams</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #07090e;
+    --bg-card: #0d1117;
+    --bg-card-alt: #111827;
+    --border: #1f2937;
+    --primary: #06b6d4;
+    --secondary: #a855f7;
+    --accent: #10b981;
+    --text: #e5e7eb;
+    --text-muted: #9ca3af;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-alt) 100%);
+  }
+  header h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+  header p { color: var(--text-muted); font-size: 1.1rem; }
+  .diagram-section {
+    margin-bottom: 3rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+  .diagram-section h2 {
+    padding: 1.25rem 1.5rem;
+    font-size: 1.4rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card-alt);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .diagram-section h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #000;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .diagram-section .description {
+    padding: 1rem 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .mermaid {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+  .mermaid svg { max-width: 100%; }
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>APEX-OS IAM/PAM</h1>
+  <p>Identity &amp; Privileged Access Management — Architecture Diagrams</p>
+</header>
+
+<!-- 1. High-Level Architecture -->
+<section class="diagram-section">
+  <h2><span class="num">1</span> High-Level Architecture</h2>
+  <p class="description">Core system components and their interactions across the APEX-OS IAM/PAM platform.</p>
+  <div class="mermaid">
+flowchart TB
+    subgraph External["External Systems"]
+        IdP["Identity Provider<br/>SAML / OIDC / LDAP"]
+        HR["HR System<br/>SCIM / API"]
+        SIEM["SIEM / SOAR<br/>Splunk / Sentinel"]
+        Cloud["Cloud Providers<br/>AWS / Azure / GCP"]
+    end
+
+    subgraph AccessLayer["Access Layer"]
+        Portal["Admin Portal<br/>React SPA"]
+        CLI["CLI / SDK<br/>apexctl"]
+        API["REST API Gateway<br/>Rate-Limited / Auth'd"]
+    end
+
+    subgraph Core["Core Services"]
+        IAM["IAM Core<br/>Identity Lifecycle"]
+        PAM["PAM Core<br/>Privileged Access"]
+        Policy["Policy Engine<br/>OPA / Cedar"]
+        Session["Session Manager<br/>Recording & Proxy"]
+        Secrets["Secrets Vault<br/>Dynamic Credentials"]
+        Deception["Deception Engine<br/>Honeypots & Canary"]
+    end
+
+    subgraph Data["Data Layer"]
+        DB[("PostgreSQL<br/>Identity Store")]
+        Cache[("Redis<br/>Session Cache")]
+        Storage[("S3 / MinIO<br/>Recordings & Audit")]
+        Queue[("Kafka<br/>Event Bus")]
+    end
+
+    subgraph Security["Security Services"]
+        Crypto["HSM / KMS<br/>Key Management"]
+        Audit["Immutable Audit Log<br/>WORM Storage"]
+        Threat["Threat Intelligence<br/>ML-Based Detection"]
+    end
+
+    IdP -->|"SCIM / SAML"| IAM
+    HR -->|"SCIM"| IAM
+    Portal --> API
+    CLI --> API
+    API --> IAM
+    API --> PAM
+    API --> Policy
+    IAM --> DB
+    PAM --> Session
+    PAM --> Secrets
+    Policy --> DB
+    Session --> Storage
+    Session --> Queue
+    Secrets --> Crypto
+    Deception --> Threat
+    Threat --> SIEM
+    IAM --> Queue
+    PAM --> Queue
+    Queue --> Audit
+    Audit --> SIEM
+    Cloud -->|"Dynamic Secrets"| Secrets
+    IAM --> Cache
+    PAM --> Cache
+
+    classDef external fill:#1e293b,stroke:#475569,color:#e5e7eb
+    classDef access fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef core fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef data fill:#022c22,stroke:#10b981,color:#e5e7eb
+    classDef security fill:#450a0a,stroke:#ef4444,color:#e5e7eb
+
+    class IdP,HR,SIEM,Cloud external
+    class Portal,CLI,API access
+    class IAM,PAM,Policy,Session,Secrets,Deception core
+    class DB,Cache,Storage,Queue data
+    class Crypto,Audit,Threat security
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#475569"></div>External Systems</div>
+    <div class="legend-item"><div class="legend-color" style="background:#06b6d4"></div>Access Layer</div>
+    <div class="legend-item"><div class="legend-color" style="background:#a855f7"></div>Core Services</div>
+    <div class="legend-item"><div class="legend-color" style="background:#10b981"></div>Data Layer</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div>Security Services</div>
+  </div>
+</section>
+
+<!-- 2. Identity Flow -->
+<section class="diagram-section">
+  <h2><span class="num">2</span> Identity Flow</h2>
+  <p class="description">End-to-end identity lifecycle: provisioning, authentication, authorization, and deprovisioning.</p>
+  <div class="mermaid">
+flowchart LR
+    subgraph Onboard["Onboarding"]
+        A1["HR Trigger<br/>New Hire Event"] --> A2["Identity Created<br/>SCIM Provision"]
+        A2 --> A3["Attributes Synced<br/>Department / Role / Manager"]
+        A3 --> A4["Initial Credentials<br/>Temp Password + MFA Enroll"]
+    end
+
+    subgraph Auth["Authentication"]
+        B1["User Login<br/>Portal / CLI"] --> B2{"MFA Required?"}
+        B2 -->|Yes| B3["MFA Challenge<br/>TOTP / WebAuthn / Push"]
+        B2 -->|No| B4["Session Token Issued<br/>JWT + Refresh Token"]
+        B3 --> B5{"MFA Success?"}
+        B5 -->|Yes| B4
+        B5 -->|No| B6["Account Lockout<br/>Alert Security"]
+    end
+
+    subgraph Authorize["Authorization"]
+        C1["Access Request<br/>Resource + Action"] --> C2["Policy Evaluation<br/>RBAC + ABAC"]
+        C2 --> C3{"Permitted?"}
+        C3 -->|Yes| C4["Grant Access<br/>Scoped Token"]
+        C3 -->|No| C5["Deny + Log<br/>Just-in-Time Elevation?"]
+        C5 --> C6["JIT Workflow<br/>Approval Chain"]
+        C6 --> C7{"Approved?"}
+        C7 -->|Yes| C4
+        C7 -->|No| C8["Access Denied<br/>Audit Log"]
+    end
+
+    subgraph Lifecycle["Lifecycle Management"]
+        D1["Periodic Access Review<br/>Quarterly Recert"] --> D2{"Still Needed?"}
+        D2 -->|Yes| D3["Renew Access<br/>Update Attributes"]
+        D2 -->|No| D4["Revoke Access<br/>Disable Account"]
+        D4 --> D5["Offboarding<br/>SCIM Deprovision"]
+        D5 --> D6["Archive Audit<br/>Cryptographic Erase"]
+    end
+
+    A4 --> B1
+    B4 --> C1
+    C4 --> D1
+    D3 --> C1
+
+    classDef onboard fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef auth fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef authz fill:#022c22,stroke:#10b981,color:#e5e7eb
+    classDef lifecycle fill:#451a03,stroke:#f59e0b,color:#e5e7eb
+
+    class A1,A2,A3,A4 onboard
+    class B1,B2,B3,B4,B5,B6 auth
+    class C1,C2,C3,C4,C5,C6,C7,C8 authz
+    class D1,D2,D3,D4,D5,D6 lifecycle
+  </div>
+</section>
+
+<!-- 3. Policy Evaluation Flow -->
+<section class="diagram-section">
+  <h2><span class="num">3</span> Policy Evaluation Flow</h2>
+  <p class="description">How access requests are evaluated against RBAC, ABAC, and ReBAC policies in real-time.</p>
+  <div class="mermaid">
+flowchart TB
+    REQ["Access Request<br/>Subject + Resource + Action + Context"] --> PARSE
+
+    subgraph Parse["Request Parsing"]
+        PARSE["Extract Claims<br/>JWT / mTLS / Session"] --> ENRICH["Enrich Context<br/>Geo / Device / Time / Threat Score"]
+    end
+
+    ENRICH --> EVAL
+
+    subgraph Eval["Policy Evaluation Engine"]
+        EVAL["Policy Decision Point<br/>OPA / Cedar"] --> RBAC{"RBAC Check<br/>Role → Permission"}
+        RBAC -->|Pass| ABAC{"ABAC Check<br/>Attribute Conditions"}
+        RBAC -->|Fail| DENY_RBAC["Deny: Role Insufficient"]
+        ABAC -->|Pass| REBAC{"ReBAC Check<br/>Relationship Graph"}
+        ABAC -->|Fail| DENY_ABAC["Deny: Attribute Mismatch"]
+        REBAC -->|Pass| RISK{"Risk Score<br/>Threshold Check"}
+        REBAC -->|Fail| DENY_REBAC["Deny: No Relationship"]
+        RISK -->|Low| PERMIT["Permit: Issue Token"]
+        RISK -->|Medium| STEP["Step-Up Auth<br/>Re-verify MFA"]
+        RISK -->|High| DENY_RISK["Deny: Risk Too High"]
+        STEP -->|Success| PERMIT
+        STEP -->|Fail| DENY_RISK
+    end
+
+    PERMIT --> OBL["Apply Obligations<br/>Session Timeout / Watermark / Logging"]
+    DENY_RBAC --> LOG
+    DENY_ABAC --> LOG
+    DENY_REBAC --> LOG
+    DENY_RISK --> LOG
+    OBL --> LOG["Immutable Audit Entry<br/>Signed + Timestamped"]
+
+    classDef parse fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef eval fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef decision fill:#022c22,stroke:#10b981,color:#e5e7eb
+    classDef deny fill:#450a0a,stroke:#ef4444,color:#e5e7eb
+    classDef permit fill:#022c22,stroke:#10b981,color:#e5e7eb
+
+    class REQ,PARSE,ENRICH parse
+    class EVAL,RBAC,ABAC,REBAC,RISK eval
+    class DENY_RBAC,DENY_ABAC,DENY_REBAC,DENY_RISK deny
+    class PERMIT,STEP,OBL,LOG permit
+  </div>
+</section>
+
+<!-- 4. Secrets Management Flow -->
+<section class="diagram-section">
+  <h2><span class="num">4</span> Secrets Management Flow</h2>
+  <p class="description">Dynamic secrets lifecycle: generation, injection, rotation, and revocation across cloud and on-prem targets.</p>
+  <div class="mermaid">
+flowchart LR
+    subgraph Request["Secret Request"]
+        S1["Workload / User<br/>Requests Credential"] --> S2["AuthN + AuthZ<br/>mTLS + JWT"]
+        S2 --> S3{"Authorized<br/>for Secret?"}
+        S3 -->|No| S4["Deny + Audit"]
+        S3 -->|Yes| S5["Generate Dynamic Cred<br/>Just-in-Time"]
+    end
+
+    subgraph Generate["Dynamic Generation"]
+        S5 --> S6["Cloud Provider<br/>AWS STS / Azure AD / GCP IAM"]
+        S5 --> S7["Database<br/>Ephemeral User + Password"]
+        S5 --> S8["SSH<br/>Short-Lived Cert"]
+        S5 --> S9["API Key<br/>Scoped + Expiring"]
+        S6 --> S10["Credential Bundle<br/>Encrypted Response"]
+        S7 --> S10
+        S8 --> S10
+        S9 --> S10
+    end
+
+    subgraph Deliver["Secure Delivery"]
+        S10 --> S11["Inject via Sidecar<br/>Vault Agent / CSI"]
+        S10 --> S12["Inject via API<br/>Response Wrapping"]
+        S10 --> S13["Inject via File<br/>Tmpfs / Memory"]
+    end
+
+    subgraph Rotate["Rotation & Revocation"]
+        R1["Scheduled Rotation<br/>TTL-Based"] --> R2["Auto-Rotate<br/>Zero Downtime"]
+        R2 --> R3["Old Cred Revoked<br/>Immediate Invalidation"]
+        R3 --> R4["New Cred Issued<br/>Seamless Handoff"]
+        R4 --> R5["Audit Trail<br/>Full Chain of Custody"]
+    end
+
+    subgraph Monitor["Monitoring"]
+        M1["Usage Tracking<br/>Who / What / When"] --> M2["Anomaly Detection<br/>ML-Based"]
+        M2 --> M3{"Anomalous?"}
+        M3 -->|Yes| M4["Auto-Revoke<br/>Kill Session"]
+        M3 -->|No| M5["Continue Monitoring"]
+    end
+
+    S11 --> R1
+    S12 --> R1
+    S13 --> R1
+    R5 --> M1
+    M4 --> S4
+
+    classDef request fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef generate fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef deliver fill:#022c22,stroke:#10b981,color:#e5e7eb
+    classDef rotate fill:#451a03,stroke:#f59e0b,color:#e5e7eb
+    classDef monitor fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef deny fill:#450a0a,stroke:#ef4444,color:#e5e7eb
+
+    class S1,S2,S3,S5 request
+    class S4 deny
+    class S6,S7,S8,S9,S10 generate
+    class S11,S12,S13 deliver
+    class R1,R2,R3,R4,R5 rotate
+    class M1,M2,M3,M4,M5 monitor
+  </div>
+</section>
+
+<!-- 5. Session Management Flow -->
+<section class="diagram-section">
+  <h2><span class="num">5</span> Session Management Flow</h2>
+  <p class="description">Privileged session lifecycle: brokering, recording, proxying, and real-time monitoring.</p>
+  <div class="mermaid">
+flowchart TB
+    subgraph Init["Session Initiation"]
+        I1["User Requests<br/>Privileged Session"] --> I2["AuthN + AuthZ<br/>MFA + Policy Check"]
+        I2 --> I3{"Approved?"}
+        I3 -->|No| I4["Deny + Notify"]
+        I3 -->|Yes| I5["Session Broker<br/>Allocate Target"]
+    end
+
+    subgraph Proxy["Session Proxy"]
+        I5 --> I6["Protocol Gateway<br/>SSH / RDP / K8s / DB"]
+        I6 --> I7["Session Isolation<br/>No Direct Network Path"]
+        I7 --> I8["Command Filtering<br/>Allowlist / Blocklist"]
+    end
+
+    subgraph Record["Recording & Monitoring"]
+        I8 --> I9["Keystroke Logging<br/>Full Audit Trail"]
+        I8 --> I10["Screen Recording<br/>Video Capture"]
+        I8 --> I11["File Transfer Log<br/>DLP Scanning"]
+        I9 --> I12["Real-Time Stream<br/>WebSocket to SIEM"]
+        I10 --> I12
+        I11 --> I12
+    end
+
+    subgraph Control["Session Control"]
+        I12 --> I13{"Anomaly<br/>Detected?"}
+        I13 -->|Yes| I14["Live Intervention<br/>Pause / Terminate"]
+        I13 -->|No| I15["Continue Session"]
+        I14 --> I16["Incident Response<br/>Forensic Capture"]
+        I15 --> I17{"Session<br/>Complete?"}
+        I17 -->|Yes| I18["Session End<br/>Cleanup Credentials"]
+        I17 -->|No| I15
+    end
+
+    subgraph Archive["Post-Session"]
+        I18 --> I19["Recording Archive<br/>Encrypted at Rest"]
+        I19 --> I20["Audit Report<br/>Signed + Timestamped"]
+        I20 --> I21["Compliance Export<br/>SOC2 / ISO27001"]
+    end
+
+    I16 --> I19
+
+    classDef init fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef proxy fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef record fill:#022c22,stroke:#10b981,color:#e5e7eb
+    classDef control fill:#451a03,stroke:#f59e0b,color:#e5e7eb
+    classDef archive fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef deny fill:#450a0a,stroke:#ef4444,color:#e5e7eb
+
+    class I1,I2,I3,I5 init
+    class I4 deny
+    class I6,I7,I8 proxy
+    class I9,I10,I11,I12 record
+    class I13,I14,I15,I16,I17 control
+    class I18,I19,I20,I21 archive
+  </div>
+</section>
+
+<!-- 6. Deception Layer Flow -->
+<section class="diagram-section">
+  <h2><span class="num">6</span> Deception Layer Flow</h2>
+  <p class="description">Active defense through honeypots, canary tokens, and decoy credentials to detect and misdirect attackers.</p>
+  <div class="mermaid">
+flowchart LR
+    subgraph Deploy["Deception Deployment"]
+        D1["Honeypot Services<br/>Fake SSH / RDP / DB"] --> D2["Canary Credentials<br/>Decoy Users + Passwords"]
+        D2 --> D3["Honeytokens<br/>Fake API Keys / Tokens"]
+        D3 --> D4["Decoy Files<br/>Breadcrumb Documents"]
+        D4 --> D5["Fake Endpoints<br/>Shadow Services"]
+    end
+
+    subgraph Detect["Detection"]
+        D1 --> D6{"Attacker<br/>Interacts?"}
+        D2 --> D6
+        D3 --> D6
+        D4 --> D6
+        D5 --> D6
+        D6 -->|Yes| D7["Instant Alert<br/>High-Fidelity Signal"]
+        D6 -->|No| D8["Continue<br/>Silent Monitoring"]
+    end
+
+    subgraph Respond["Automated Response"]
+        D7 --> D9["Trigger Playbook<br/>SOAR Integration"]
+        D9 --> D10["Isolate Attacker<br/>Network Segmentation"]
+        D9 --> D11["Capture Forensics<br/>PCAP + Memory Dump"]
+        D9 --> D12["Misdirect<br/>Redirect to Honeypot"]
+    end
+
+    subgraph Analyze["Threat Intelligence"]
+        D10 --> D13["IOC Extraction<br/>Attacker TTPs"]
+        D11 --> D13
+        D12 --> D14["Behavioral Profile<br/>MITRE ATT&CK Mapping"]
+        D13 --> D15["Feed Back<br/>Update Detections"]
+        D14 --> D15
+    end
+
+    classDef deploy fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef detect fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef respond fill:#450a0a,stroke:#ef4444,color:#e5e7eb
+    classDef analyze fill:#022c22,stroke:#10b981,color:#e5e7eb
+
+    class D1,D2,D3,D4,D5 deploy
+    class D6,D7,D8 detect
+    class D9,D10,D11,D12 respond
+    class D13,D14,D15 analyze
+  </div>
+</section>
+
+<!-- 7. Zero Trust Flow -->
+<section class="diagram-section">
+  <h2><span class="num">7</span> Zero Trust Flow</h2>
+  <p class="description">Never trust, always verify — continuous verification of every access request across users, devices, and services.</p>
+  <div class="mermaid">
+flowchart TB
+    subgraph Request["Access Request"]
+        Z1["Subject<br/>User / Service / Workload"] --> Z2["Device<br/>Managed / Compliant?"]
+        Z2 --> Z3["Context<br/>Location / Time / Threat"]
+        Z3 --> Z4["Resource<br/>App / Data / Infra"]
+    end
+
+    subgraph Verify["Continuous Verification"]
+        Z4 --> Z5["Identity Verify<br/>Strong AuthN + MFA"]
+        Z5 --> Z6["Device Verify<br/>Posture + Health Check"]
+        Z6 --> Z7["Behavior Verify<br/>UEBA Baseline"]
+        Z7 --> Z8["Least Privilege<br/>Just-in-Time Access"]
+    end
+
+    subgraph Decide["Dynamic Decision"]
+        Z8 --> Z9{"Trust Score<br/>Sufficient?"}
+        Z9 -->|High| Z10["Full Access<br/>Standard Session"]
+        Z9 -->|Medium| Z11["Limited Access<br/>Step-Up + Monitoring"]
+        Z9 -->|Low| Z12["Deny + Quarantine<br/>Alert SOC"]
+    end
+
+    subgraph Enforce["Policy Enforcement"]
+        Z10 --> Z13["Micro-Segmentation<br/>Per-Session Firewall"]
+        Z11 --> Z13
+        Z13 --> Z14["Encrypted Channel<br/>mTLS Everywhere"]
+        Z14 --> Z15["Continuous Auth<br/>Re-Verify Every 5min"]
+    end
+
+    subgraph Monitor["Continuous Monitoring"]
+        Z15 --> Z16["Telemetry Collection<br/>All Traffic Logged"]
+        Z16 --> Z17["Anomaly Detection<br/>ML + Rules"]
+        Z17 --> Z18{"Risk<br/>Changed?"}
+        Z18 -->|Yes| Z19["Adaptive Response<br/>Adjust / Revoke"]
+        Z18 -->|No| Z15
+        Z19 --> Z9
+    end
+
+    Z12 --> Z20["Incident Response<br/>Forensics + Remediation"]
+
+    classDef request fill:#083344,stroke:#06b6d4,color:#e5e7eb
+    classDef verify fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef decide fill:#022c22,stroke:#10b981,color:#e5e7eb
+    classDef enforce fill:#451a03,stroke:#f59e0b,color:#e5e7eb
+    classDef monitor fill:#1e1b4b,stroke:#a855f7,color:#e5e7eb
+    classDef deny fill:#450a0a,stroke:#ef4444,color:#e5e7eb
+
+    class Z1,Z2,Z3,Z4 request
+    class Z5,Z6,Z7,Z8 verify
+    class Z9,Z10,Z11 decide
+    class Z13,Z14,Z15 enforce
+    class Z16,Z17,Z18,Z19 monitor
+    class Z12,Z20 deny
+  </div>
+</section>
+
+<footer>
+  <p>APEX-OS IAM/PAM — Architecture Documentation &copy; 2026 Ahmed Hassan</p>
+  <p>Generated: October 2026 | Version 1.0</p>
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#07090e',
+      primaryColor: '#0d1117',
+      primaryBorderColor: '#06b6d4',
+      primaryTextColor: '#e5e7eb',
+      secondaryColor: '#1e1b4b',
+      secondaryBorderColor: '#a855f7',
+      secondaryTextColor: '#e5e7eb',
+      tertiaryColor: '#022c22',
+      tertiaryBorderColor: '#10b981',
+      tertiaryTextColor: '#e5e7eb',
+      lineColor: '#4b5563',
+      textColor: '#e5e7eb',
+      mainBkg: '#0d1117',
+      nodeBorder: '#06b6d4',
+      clusterBkg: '#111827',
+      clusterBorder: '#1f2937',
+      titleColor: '#e5e7eb',
+      edgeLabelBackground: '#07090e'
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 20,
+      nodeSpacing: 50,
+      rankSpacing: 60,
+      useMaxWidth: true
+    },
+    securityLevel: 'loose'
+  });
+</script>
+
+</body>
+</html>

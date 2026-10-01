@@ -1,0 +1,20 @@
+{{- if .Values.redis.enabled }}
+# Redis is expected to be deployed via Bitnami Redis subchart
+# This file documents the expected configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-redis-config
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cache
+data:
+  redis.conf: |
+    maxmemory 512mb
+    maxmemory-policy allkeys-lru
+    appendonly yes
+    appendfsync everysec
+    save 900 1
+    save 300 10
+    save 60 10000
+{{- end }}

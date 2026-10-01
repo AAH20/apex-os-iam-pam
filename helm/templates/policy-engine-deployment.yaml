@@ -1,0 +1,94 @@
+{{- if .Values.policyEngine.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-policy-engine
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: policy-engine
+spec:
+  replicas: {{ .Values.replicaCount.policyEngine }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-policy-engine
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-policy-engine
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: policy-engine
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.policyEngine.port }}"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: {{ include "apex-os-iam-pam.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.security.podSecurityContext | nindent 8 }}
+      containers:
+        - name: policy-engine
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository.policyEngine }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.policyEngine.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "apex-os-iam-pam.fullname" . }}-config
+            - secretRef:
+                name: {{ include "apex-os-iam-pam.fullname" . }}-secrets
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            {{- toYaml .Values.security.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: policies
+              mountPath: /policies
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: policies
+          configMap:
+            name: {{ include "apex-os-iam-pam.fullname" . }}-policies
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

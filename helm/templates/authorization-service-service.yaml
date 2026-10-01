@@ -1,0 +1,19 @@
+{{- if .Values.authorizationService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-authorization-service
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: authorization-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.authorizationService.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-authorization-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

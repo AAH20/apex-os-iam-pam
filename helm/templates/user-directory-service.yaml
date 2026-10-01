@@ -1,0 +1,19 @@
+{{- if .Values.userDirectory.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-user-directory
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: user-directory
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.userDirectory.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-user-directory
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

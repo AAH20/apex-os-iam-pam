@@ -1,0 +1,19 @@
+{{- if .Values.sessionService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-session-service
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: session-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.sessionService.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-session-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

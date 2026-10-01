@@ -1,0 +1,37 @@
+{{- if .Values.openldap.enabled }}
+# OpenLDAP is expected to be deployed via Bitnami OpenLDAP subchart
+# This file documents the expected configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-openldap-config
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: directory
+data:
+  base.ldif: |
+    dn: dc=apex-os,dc=io
+    objectClass: top
+    objectClass: dcObject
+    objectClass: organization
+    o: APEX-OS
+    dc: apex-os
+
+    dn: ou=users,dc=apex-os,dc=io
+    objectClass: organizationalUnit
+    ou: users
+
+    dn: ou=groups,dc=apex-os,dc=io
+    objectClass: organizationalUnit
+    ou: groups
+
+    dn: ou=roles,dc=apex-os,dc=io
+    objectClass: organizationalUnit
+    ou: roles
+
+    dn: cn=admin,dc=apex-os,dc=io
+    objectClass: simpleSecurityObject
+    objectClass: organizationalRole
+    cn: admin
+    userPassword: {{ .Values.openldap.adminPassword | b64enc | quote }}
+{{- end }}

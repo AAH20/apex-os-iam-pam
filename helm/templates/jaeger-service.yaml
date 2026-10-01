@@ -1,0 +1,23 @@
+{{- if .Values.monitoring.jaeger.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-jaeger
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jaeger
+spec:
+  type: ClusterIP
+  ports:
+    - port: 16686
+      targetPort: ui
+      protocol: TCP
+      name: ui
+    - port: 14268
+      targetPort: collector
+      protocol: TCP
+      name: collector
+  selector:
+    app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-jaeger
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

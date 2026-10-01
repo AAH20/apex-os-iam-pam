@@ -1,0 +1,19 @@
+{{- if .Values.webUI.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-web-ui
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web-ui
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.webUI.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "apex-os-iam-pam.name" . }}-web-ui
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

@@ -1,0 +1,108 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "apex-os-iam-pam.fullname" . }}-grafana-dashboards
+  labels:
+    {{- include "apex-os-iam-pam.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+    grafana_dashboard: "1"
+data:
+  apex-os-iam-pam-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "APEX-OS IAM/PAM",
+        "tags": ["apex-os", "iam", "pam", "security"],
+        "timezone": "utc",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total[5m])",
+                "legendFormat": "{{status}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Response Time (p95)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+                "legendFormat": "p95"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Active Sessions",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "apex_sessions_active_total",
+                "legendFormat": "Active Sessions"
+              }
+            ],
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Failed Logins",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "rate(apex_auth_login_failures_total[5m])",
+                "legendFormat": "Failed Logins/s"
+              }
+            ],
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8}
+          },
+          {
+            "id": 5,
+            "title": "PAM Sessions",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "apex_pam_sessions_active_total",
+                "legendFormat": "PAM Sessions"
+              }
+            ],
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8}
+          },
+          {
+            "id": 6,
+            "title": "Credential Rotations",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "rate(apex_vault_credential_rotations_total[1h])",
+                "legendFormat": "Rotations/hr"
+              }
+            ],
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8}
+          },
+          {
+            "id": 7,
+            "title": "Service Health",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "up{job=~\"apex-os-iam-pam.*\"}",
+                "format": "table"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12}
+          }
+        ],
+        "time": {"from": "now-6h", "to": "now"},
+        "refresh": "30s"
+      }
+    }
+{{- end }}
