@@ -1888,10 +1888,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to APEX-OS
 
 ## Support
 
-- **Documentation:** https://docs.apex-os.io
-- **Issues:** https://github.com/ahmedhassan/apex-os-iam-pam/issues
-- **Discussions:** https://github.com/ahmedhassan/apex-os-iam-pam/discussions
-- **Security:** security@apex-os.io
+- **Documentation:** https://github.com/AAH20/apex-os-iam-pam/wiki
+- **Issues:** https://github.com/AAH20/apex-os-iam-pam/issues
+- **Discussions:** https://github.com/AAH20/apex-os-iam-pam/discussions
+- **Security:** aah@a2zsoc.com
 
 ---
 
