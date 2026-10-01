@@ -108,9 +108,9 @@ class Keycloak:
     def __init__(self, realm: str = "apex-os") -> None:
         self.realm = realm
         self._users: Dict[str, Dict[str, str]] = {
-            "alice": {"password": "alice-pass-123", "email": "alice@apex-os.io",
+            "alice": {"password": "alice-pass-123", "email": "aah@a2zsoc.com",
                        "groups": ["developers", "oncall"]},
-            "bob":   {"password": "bob-pass-456",   "email": "bob@apex-os.io",
+            "bob":   {"password": "bob-pass-456",   "email": "aah@a2zsoc.com",
                        "groups": ["auditors"]},
         }
         self._tokens: Dict[str, OIDCClaims] = {}
@@ -124,7 +124,7 @@ class Keycloak:
         now = int(time.time())
         claims = OIDCClaims(
             sub=str(uuid.uuid4()),
-            iss=f"https://kc.apex-os.io/realms/{self.realm}",
+            iss=f"http://localhost:8080/realms/{self.realm}",
             aud="apex-os-cli",
             exp=now + 300,
             iat=now,
@@ -144,7 +144,7 @@ class Keycloak:
             return None
         if claims.exp < int(time.time()):
             return None
-        if not claims.iss.startswith("https://kc.apex-os.io"):
+        if not claims.iss.startswith("http://localhost:8080"):
             return None
         return claims
 

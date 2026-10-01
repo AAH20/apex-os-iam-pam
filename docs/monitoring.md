@@ -1730,8 +1730,8 @@ groups:
 # alertmanager/alertmanager.yml
 global:
   smtp_smarthost: 'smtp.example.com:587'
-  smtp_from: 'alerts@apexos.io'
-  smtp_auth_username: 'alerts@apexos.io'
+  smtp_from: 'aah@a2zsoc.com'
+  smtp_auth_username: 'aah@a2zsoc.com'
   smtp_auth_password: '${SMTP_PASSWORD}'
   slack_api_url: '${SLACK_WEBHOOK_URL}'
   pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'

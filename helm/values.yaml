@@ -105,7 +105,7 @@ authService:
   jwt:
     accessTokenTTL: 900
     refreshTokenTTL: 604800
-    issuer: "https://iam.apex-os.io"
+    issuer: "http://localhost:8080"
   mfa:
     enabled: true
     totpIssuer: "APEX-OS"

@@ -17,6 +17,6 @@ sources:
   - https://github.com/apex-os/iam-pam
 maintainers:
   - name: APEX-OS Team
-    email: team@apex-os.io
+    email: aah@a2zsoc.com
 annotations:
   category: Security

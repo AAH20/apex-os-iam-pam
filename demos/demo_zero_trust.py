@@ -374,7 +374,7 @@ def run_demo() -> None:
     alice = UserIdentity(
         user_id="u-001",
         username="alice",
-        email="alice@apex-os.io",
+        email="aah@a2zsoc.com",
         groups=["developers", "oncall"],
         mfa_method=MFAMethod.WEBAUTHN,
         mfa_verified=True,
@@ -416,7 +416,7 @@ def run_demo() -> None:
     bob = UserIdentity(
         user_id="u-002",
         username="bob",
-        email="bob@apex-os.io",
+        email="aah@a2zsoc.com",
         groups=["developers"],
         mfa_method=MFAMethod.TOTP,
         mfa_verified=True,

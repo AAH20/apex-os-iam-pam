@@ -59,7 +59,7 @@ A comprehensive Kubernetes Helm chart for deploying the APEX-OS Identity and Acc
 
 ```bash
 # Add the repository (if applicable)
-helm repo add apex-os https://charts.apex-os.io
+helm repo add apex-os https://github.com/AAH20/apex-os-iam-pam/tree/main/helm
 helm repo update
 
 # Install the chart

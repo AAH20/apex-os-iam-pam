@@ -157,7 +157,7 @@ sequenceDiagram
     A->>T: Authenticator Response
     T->>A: Short-lived Client Certificate
 
-    A->>T: tsh ssh admin@prod-db-01
+    A->>T: tsh ssh aah@a2zsoc.comprod-db-01
     T->>V: Request Dynamic Credentials
     V->>T: Database Credentials (TTL: 1h)
     T->>S: SSH Session (certificate-based)
@@ -216,7 +216,7 @@ flowchart LR
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/ahmedhassan/apex-os-iam-pam.git
+git clone https://github.com/AAH20/apex-os-iam-pam.git
 cd apex-os-iam-pam
 
 # Copy environment template
@@ -636,7 +636,7 @@ policy:
     to: http://backend:8080
     pass_identity_headers: true
     authorized_users:
-      - alice@example.com
+      - aah@a2zsoc.com
     allow:
       or:
         - domain:
@@ -805,7 +805,7 @@ tsh request create --roles=db-admin --reason="INCIDENT-1234: Database migration"
 tsh request review <request-id> --approve
 
 # Use the granted access
-tsh ssh admin@prod-db-01
+tsh ssh aah@a2zsoc.comprod-db-01
 
 # Session is recorded and auditable
 tsh play <session-id>
@@ -888,8 +888,8 @@ alert_channels:
   - type: email
     smtp_host: smtp.apex.local
     smtp_port: 587
-    from: canary@apex.local
-    to: security-team@apex.local
+    from: aah@a2zsoc.com
+    to: aah@a2zsoc.com
 
   - type: webhook
     url: https://vault.apex.local:8200/v1/apex/alerts
@@ -1114,7 +1114,7 @@ curl -s -X POST \
   -d "grant_type=password" \
   -d "client_id=pomerium" \
   -d "client_secret=${POMERIUM_CLIENT_SECRET}" \
-  -d "username=alice@example.com" \
+  -d "username=aah@a2zsoc.com" \
   -d "password=..." \
   -d "scope=openid profile email groups" | jq .
 ```
